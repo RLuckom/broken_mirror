@@ -14,7 +14,7 @@ class TestWebTestResults(unittest.TestCase):
 
     def test_web_test_results_build_report(self):
         t = datetime.datetime.now()
-        self.driver.get('http://google.com')
+        self.driver.get('http://www.google.com')
         print 'got site'
         fn = tempfile.mkstemp(suffix='.png')[1]
         self.driver.get_screenshot_as_file(fn)

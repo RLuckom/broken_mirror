@@ -36,7 +36,7 @@ class _WebTestSection(object):
             w, h = img.size
         if h > self.max_y:
             upper = 0
-            lower = self.max_y - 20 - self.header_offset
+            lower = self.max_y - 20 - int(self.header_offset + 1)
             left = 0
             bbox = (left, upper, w, lower)
             i = img.crop(bbox)
@@ -45,11 +45,13 @@ class _WebTestSection(object):
             print i
             i.save(t, dpi=(300, 300))
             self.imgs.append(Image(t, width=w, height=lower - upper))
-            while lower > h:
-                upper += lower
+            while lower < h:
+                upper = lower
                 lower += self.max_y - 20
                 lower = h if lower > h else lower
                 bbox = (left, upper, w, lower)
+                print bbox
+                print h
                 i = img.crop(bbox)
                 t = tempfile.mkstemp(suffix='.png')[1]
                 i.save(t, dpi=(300, 300))
