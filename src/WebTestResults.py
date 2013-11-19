@@ -1,17 +1,70 @@
 #!/usr/bin/env python
 """Class for collecting and outputting results to PDF with reportlab."""
 
+from PIL import Image as IM
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate
-from reportlab.rl_config import defaultPageSize
 from reportlab.lib import utils
 from reportlab.lib.styles import ParagraphStyle
+import tempfile
 
 from src.platypus_utils import get_para_style_defaults
 
 
+class _WebTestSection(object):
+
+    def __init__(self, heading_head, heading_text, header_style, text_style):
+        self.max_x = 438
+        self.max_y = 684
+        self.header_text = heading_text.split('\n')
+        self.heading_head = heading_head
+        self.header_style = header_style
+        self.text_style = text_style
+        self.imgs = []
+        self.header_offset = (header_style.leading
+                              + (text_style.leading * len(self.header_text)))
+
+    def add_image_from_file(self, fn):
+        img = IM.open(fn)
+        print img, fn
+        img.save(fn, dpi=(300, 300))
+        img = IM.open(fn)
+        w, h = img.size
+        if w > self.max_x - 20:
+            scale = (self.max_x - 20) / float(w)
+            img = img.resize((int(w * scale), int(h * scale)),
+                             IM.ANTIALIAS)
+            w, h = img.size
+        if h > self.max_y:
+            upper = 0
+            lower = self.max_y - 20 - self.header_offset
+            left = 0
+            bbox = (left, upper, w, lower)
+            i = img.crop(bbox)
+            t = tempfile.mkstemp(suffix='.png')[1]
+            print t
+            print i
+            i.save(t, dpi=(300, 300))
+            self.imgs.append(Image(t, width=w, height=lower - upper))
+            while lower > h:
+                upper += lower
+                lower += self.max_y - 20
+                lower = h if lower > h else lower
+                bbox = (left, upper, w, lower)
+                i = img.crop(bbox)
+                t = tempfile.mkstemp(suffix='.png')[1]
+                i.save(t, dpi=(300, 300))
+                self.imgs.append(Image(t, width=w, height=lower - upper))
+        else:
+            self.imgs.append(Image(fn, width=w, height=h))
+
+    def list_elements(self):
+        head = Paragraph(self.heading_head, self.header_style)
+        text = [Paragraph(x, self.text_style) for x in self.header_text]
+        return [head] + text + self.imgs
+
+
 class WebTestResults(object):
     """class for collecting and outputting results to pdf with reportlab"""
-
     def __init__(self):
         """constructor.
 
@@ -25,17 +78,16 @@ class WebTestResults(object):
         look at platypus_utils.get_para_style_defaults and make educated
         guesses."""
         self._story = []
-        self.max_x, self.max_y = defaultPageSize
         self._heading_style_dict = get_para_style_defaults()
         self._heading_style_dict['fontName'] = 'Helvetica-Bold'
         self._heading_style_dict['fontSize'] = 17.5
         self._heading_style_dict['leading'] = 20
-        self.heading_style = ParagraphStyle('head', **self.heading_style)
+        self.heading_style = ParagraphStyle('head', **self._heading_style_dict)
         self._text_style_dict = get_para_style_defaults()
         self._text_style_dict['fontName'] = "Helvetica"
         self._text_style_dict['fontSize'] = 12.5
         self._text_style_dict['leading'] = 13.5
-        self.text_style = ParagraphStyle('text', **self.text_style)
+        self.text_style = ParagraphStyle('text', **self._text_style_dict)
 
     def add_img_from_file(self, filename):
         """Adds an image from a file to the document. Currently assumes the
@@ -65,11 +117,11 @@ class WebTestResults(object):
         @param img_y (number) : image height in px
         @return (tuple) : (int_img_x, int_img_y)
         """
-        x_scale = 1 if self.max_x > img_x else self.max_x / img_x
-        y_scale = 1 if self.max_y > img_y else self.max_y / img_y
+        x_scale = 1 if self.max_x > img_x else float(self.max_x) / img_x
+        y_scale = 1 if self.max_y > img_y else float(self.max_y) / img_y
 
         # Take the smallest scale factor, add a little slack for margins
-        scale = min(x_scale, y_scale) - .1
+        scale = min(x_scale, y_scale)
         return (int(scale * img_x), int(scale * img_y))
 
     def add_test_section_header(self, heading, text):
@@ -107,7 +159,9 @@ class WebTestResults(object):
 
         @param text (str) : text to be added.
         """
-        self._story.append(Paragraph(text, self.text_style))
+        text = text.split('\n')
+        self._story += [Paragraph(x, self.text_style) for x in text]
+        print [Paragraph(x, self.text_style).height for x in text]
 
     def write_to_file(self, filename):
         """writes the report to filename.
@@ -148,3 +202,9 @@ class WebTestResults(object):
         """
         self._text_style_dict[attribute_name] = val
         self.text_style = ParagraphStyle('head', **self.text_style)
+
+    def add_section(self, header, text, imgfile):
+        sec = _WebTestSection(header, text, self.heading_style,
+                              self.text_style)
+        sec.add_image_from_file(imgfile)
+        self._story += sec.list_elements()
