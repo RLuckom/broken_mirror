@@ -1,72 +1,23 @@
 #!/usr/bin/env python
-"""Class for collecting and outputting results to PDF with reportlab."""
+"""Class for collecting and outputting results to PDF with reportlab.
 
-from PIL import Image as IM
+@author raphael.luckom
+@license GPL v2.0 or later
+
+"""
+
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate
 from reportlab.lib import utils
 from reportlab.lib.styles import ParagraphStyle
-import tempfile
 
 from src.platypus_utils import get_para_style_defaults
-
-
-class _WebTestSection(object):
-
-    def __init__(self, heading_head, heading_text, header_style, text_style):
-        self.max_x = 438
-        self.max_y = 684
-        self.header_text = heading_text.split('\n')
-        self.heading_head = heading_head
-        self.header_style = header_style
-        self.text_style = text_style
-        self.imgs = []
-        self.header_offset = (header_style.leading
-                              + (text_style.leading * len(self.header_text)))
-
-    def add_image_from_file(self, fn):
-        img = IM.open(fn)
-        print img, fn
-        img.save(fn, dpi=(300, 300))
-        img = IM.open(fn)
-        w, h = img.size
-        if w > self.max_x - 20:
-            scale = (self.max_x - 20) / float(w)
-            img = img.resize((int(w * scale), int(h * scale)),
-                             IM.ANTIALIAS)
-            w, h = img.size
-        if h > self.max_y:
-            upper = 0
-            lower = self.max_y - 20 - int(self.header_offset + 1)
-            left = 0
-            bbox = (left, upper, w, lower)
-            i = img.crop(bbox)
-            t = tempfile.mkstemp(suffix='.png')[1]
-            print t
-            print i
-            i.save(t, dpi=(300, 300))
-            self.imgs.append(Image(t, width=w, height=lower - upper))
-            while lower < h:
-                upper = lower
-                lower += self.max_y - 20
-                lower = h if lower > h else lower
-                bbox = (left, upper, w, lower)
-                print bbox
-                print h
-                i = img.crop(bbox)
-                t = tempfile.mkstemp(suffix='.png')[1]
-                i.save(t, dpi=(300, 300))
-                self.imgs.append(Image(t, width=w, height=lower - upper))
-        else:
-            self.imgs.append(Image(fn, width=w, height=h))
-
-    def list_elements(self):
-        head = Paragraph(self.heading_head, self.header_style)
-        text = [Paragraph(x, self.text_style) for x in self.header_text]
-        return [head] + text + self.imgs
+from src.WebTestSection import WebTestSection
 
 
 class WebTestResults(object):
-    """class for collecting and outputting results to pdf with reportlab"""
+
+    """collects and outputs results to pdf with reportlab."""
+
     def __init__(self):
         """constructor.
 
@@ -78,7 +29,9 @@ class WebTestResults(object):
         set_text_attribute and set_heading_attribute. For an overview of
         available style attributes, see the reportlab documentation, or
         look at platypus_utils.get_para_style_defaults and make educated
-        guesses."""
+        guesses.
+
+        """
         self._story = []
         self._heading_style_dict = get_para_style_defaults()
         self._heading_style_dict['fontName'] = 'Helvetica-Bold'
@@ -92,8 +45,10 @@ class WebTestResults(object):
         self.text_style = ParagraphStyle('text', **self._text_style_dict)
 
     def add_img_from_file(self, filename):
-        """Adds an image from a file to the document. Currently assumes the
-        image is already 300 dpi, and scales it to fit in one page.
+        """Add an image from a file to the document.
+
+        Currently assumes the image is already 300 dpi, and scales
+        it to fit in one page.
 
         TODO:
             Future versions will:
@@ -102,14 +57,14 @@ class WebTestResults(object):
                 slice the image across pages semi-intelligently
 
         @param filename (str) : full path to image file
+
         """
         img = utils.ImageReader(filename)
         w, h = self._scale_img(*img.getSize())
         self._story.append(Image(filename, width=w, height=h))
 
     def _scale_img(self, img_x, img_y):
-        """returns new image dimensions that will fit inside
-        self.max_x and self.max_y.
+        """return new image dimensions that will fit max_x and max_y.
 
         TODO:
             Check the dimensions used by platypus for image size. If not px,
@@ -118,6 +73,7 @@ class WebTestResults(object):
         @param img_x (number) : image width in px
         @param img_y (number) : image height in px
         @return (tuple) : (int_img_x, int_img_y)
+
         """
         x_scale = 1 if self.max_x > img_x else float(self.max_x) / img_x
         y_scale = 1 if self.max_y > img_y else float(self.max_y) / img_y
@@ -127,7 +83,7 @@ class WebTestResults(object):
         return (int(scale * img_x), int(scale * img_y))
 
     def add_test_section_header(self, heading, text):
-        """Adds opening text describing a test
+        """Add opening text describing a test.
 
         A section header is the textual material that precedes the image(s)
         displayed for a test of a particular platform. This is rendered in a
@@ -145,36 +101,39 @@ class WebTestResults(object):
 
         @param heading (str) : text to be used as heading
         @param text (str) : subheading text
+
         """
         self.add_heading(heading)
         self.add_text(text)
 
     def add_heading(self, text):
-        """Appends a paragraph of text in the heading style to the story.
+        """Append a paragraph of text in the heading style to the story.
 
         @param text (str) : text to be added as heading.
+
         """
         self._story.append(Paragraph(text, self.heading_style))
 
     def add_text(self, text):
-        """Appends a paragraph of text in the regular style to the story.
+        """Append a paragraph of text in the regular style to the story.
 
         @param text (str) : text to be added.
+
         """
         text = text.split('\n')
         self._story += [Paragraph(x, self.text_style) for x in text]
-        print [Paragraph(x, self.text_style).height for x in text]
 
     def write_to_file(self, filename):
-        """writes the report to filename.
+        """write the report to filename.
 
         @param filename (str) : full path to file to write
+
         """
         doc = SimpleDocTemplate(filename)
         doc.build(self._story)
 
     def set_heading_attribute(self, attribute_name, val):
-        """Sets an attribute of the style used when adding headings.
+        """Set an attribute of the style used when adding headings.
 
         For a reference to the allowable styles, see the reportlab
         docs or look at platypus_utils.get_para_style_defaults.
@@ -185,12 +144,13 @@ class WebTestResults(object):
                            take special values defined by reportlab. This
                            method does NOT convert val argument types to
                            the types expected by reportlab.
+
         """
         self._heading_style_dict[attribute_name] = val
         self.heading_style = ParagraphStyle('head', **self.heading_style)
 
     def set_text_attribute(self, attribute_name, val):
-        """Sets an attribute of the style used when adding headings.
+        """Set an attribute of the style used when adding headings.
 
         For a reference to the allowable styles, see the reportlab
         docs or look at platypus_utils.get_para_style_defaults.
@@ -201,12 +161,13 @@ class WebTestResults(object):
                            take special values defined by reportlab. This
                            method does NOT convert val argument types to
                            the types expected by reportlab.
+
         """
         self._text_style_dict[attribute_name] = val
         self.text_style = ParagraphStyle('head', **self.text_style)
 
     def add_section(self, header, text, imgfile):
-        sec = _WebTestSection(header, text, self.heading_style,
-                              self.text_style)
-        sec.add_image_from_file(imgfile)
+        sec = WebTestSection(header, text, self.heading_style,
+                             self.text_style)
+        sec.chunk_img(imgfile)
         self._story += sec.list_elements()

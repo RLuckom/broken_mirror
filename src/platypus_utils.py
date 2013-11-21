@@ -4,6 +4,26 @@ from reportlab.lib import colors
 from reportlab.lib import enums
 
 
+def points_to_std(pts):
+    """@return (float) : std units (inches)."""
+    return pts / 72.0
+
+
+def px_to_std(px):
+    """@return (float) : std units (inches)."""
+    return px / 300.0
+
+
+def std_to_points(std):
+    """@return (float) : points -- remember to convert to int."""
+    return std * 72.0
+
+
+def std_to_px(std):
+    """@return (float) : pixels -- remember to convert to int."""
+    return std * 300.0
+
+
 def get_para_style_defaults():
     """@return (dict) : dict of default platypus style attributes."""
     return {'fontName': 'Times-Roman',
