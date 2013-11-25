@@ -27,9 +27,9 @@ class TestWebTestResults(unittest.TestCase):
         """run a simple report."""
         t = datetime.datetime.now()
         self.driver.get(TEST_DOMAIN)
+        t = str(datetime.datetime.now() - t)
         fn = tempfile.mkstemp(suffix='.png')[1]
         self.driver.get_screenshot_as_file(fn)
-        t = str(datetime.datetime.now() - t)
         heading = "Firefox Google Test"
         ver = self.driver.capabilities['version']
         plat = self.driver.capabilities['platform']

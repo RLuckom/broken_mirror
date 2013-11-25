@@ -6,8 +6,7 @@
 
 """
 
-from reportlab.platypus import Image, Paragraph, SimpleDocTemplate
-from reportlab.lib import utils
+from reportlab.platypus import SimpleDocTemplate
 from reportlab.lib.styles import ParagraphStyle
 
 from src.platypus_utils import get_para_style_defaults
@@ -44,85 +43,6 @@ class WebTestResults(object):
         self._text_style_dict['leading'] = 13.5
         self.text_style = ParagraphStyle('text', **self._text_style_dict)
 
-    def add_img_from_file(self, filename):
-        """Add an image from a file to the document.
-
-        Currently assumes the image is already 300 dpi, and scales
-        it to fit in one page.
-
-        TODO:
-            Future versions will:
-                be generalized to handle PIL and reportlab images
-                deal with resolution appropriately
-                slice the image across pages semi-intelligently
-
-        @param filename (str) : full path to image file
-
-        """
-        img = utils.ImageReader(filename)
-        w, h = self._scale_img(*img.getSize())
-        self._story.append(Image(filename, width=w, height=h))
-
-    def _scale_img(self, img_x, img_y):
-        """return new image dimensions that will fit max_x and max_y.
-
-        TODO:
-            Check the dimensions used by platypus for image size. If not px,
-            this may be pretty broken
-
-        @param img_x (number) : image width in px
-        @param img_y (number) : image height in px
-        @return (tuple) : (int_img_x, int_img_y)
-
-        """
-        x_scale = 1 if self.max_x > img_x else float(self.max_x) / img_x
-        y_scale = 1 if self.max_y > img_y else float(self.max_y) / img_y
-
-        # Take the smallest scale factor, add a little slack for margins
-        scale = min(x_scale, y_scale)
-        return (int(scale * img_x), int(scale * img_y))
-
-    def add_test_section_header(self, heading, text):
-        """Add opening text describing a test.
-
-        A section header is the textual material that precedes the image(s)
-        displayed for a test of a particular platform. This is rendered in a
-        heading style (for the title) and a subhead style (for the text).
-        A reasonable example might be:
-        ----
-        Internet Explorer 10
-
-        OS: Windows
-        UserAgent: Internet Explorer
-        Load Time: 00:00:2.700000
-        ----
-        In that example, the first line would be passed as the heading and the
-        remaining lines (as a single string) would be passed as text.
-
-        @param heading (str) : text to be used as heading
-        @param text (str) : subheading text
-
-        """
-        self.add_heading(heading)
-        self.add_text(text)
-
-    def add_heading(self, text):
-        """Append a paragraph of text in the heading style to the story.
-
-        @param text (str) : text to be added as heading.
-
-        """
-        self._story.append(Paragraph(text, self.heading_style))
-
-    def add_text(self, text):
-        """Append a paragraph of text in the regular style to the story.
-
-        @param text (str) : text to be added.
-
-        """
-        text = text.split('\n')
-        self._story += [Paragraph(x, self.text_style) for x in text]
-
     def write_to_file(self, filename):
         """write the report to filename.
 
@@ -132,7 +52,7 @@ class WebTestResults(object):
         doc = SimpleDocTemplate(filename)
         doc.build(self._story)
 
-    def set_heading_attribute(self, attribute_name, val):
+    def set_heading_style_attribute(self, attribute_name, val):
         """Set an attribute of the style used when adding headings.
 
         For a reference to the allowable styles, see the reportlab
@@ -149,7 +69,7 @@ class WebTestResults(object):
         self._heading_style_dict[attribute_name] = val
         self.heading_style = ParagraphStyle('head', **self.heading_style)
 
-    def set_text_attribute(self, attribute_name, val):
+    def set_texti_style_attribute(self, attribute_name, val):
         """Set an attribute of the style used when adding headings.
 
         For a reference to the allowable styles, see the reportlab

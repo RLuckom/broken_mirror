@@ -2,7 +2,7 @@
 
 import unittest
 
-from tests.TestWebDriver import TestWebTestResults
+from tests.TestWebTestResults import TestWebTestResults
 
 
 if __name__ == '__main__':

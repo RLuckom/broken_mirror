@@ -48,11 +48,12 @@ class WebTester(object):
         driver = webdriver.Remote(test.browser_node_uri,
                                   test.browser_selenium_spec)
         for resource in test.resources_to_test:
+            driver.get('http://www.google.com')
             t = datetime.datetime.now()
             driver.get(resource)
+            t = str(datetime.datetime.now() - t)
             fn = tempfile.mkstemp(suffix='.png')[1]
             driver.get_screenshot_as_file(fn)
-            t = str(datetime.datetime.now() - t)
             heading = '{} Test'.format(resource)
             ver = driver.capabilities['version']
             plat = driver.capabilities['platform']

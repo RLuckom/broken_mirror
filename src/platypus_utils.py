@@ -40,7 +40,7 @@ def get_para_style_defaults():
             'bulletIndent': 0,
             'textColor': colors.black,
             'backColor': None,
-            'wordWrap': None,
+            'wordWrap': 80,
             'borderWidth': 0,
             'borderPadding': 0,
             'borderColor': None,
