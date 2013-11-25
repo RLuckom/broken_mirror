@@ -19,17 +19,18 @@ class ImageProcessingMixin(object):
         if not hasattr(self, 'px_per_inch'):
             self.px_per_inch = 300.0
 
-    def resize_img_to_width(self, img, width=None):
+    def resize_img_to_width(self, img_filename, width=None):
         """scale down an image until it fits within self.max_width.
 
         Converts self.max_width and img width to inches (at self.px_per_inch),
         then downsamples the img if necessary so it fits width at
         self.px_per_inch
 
-        @param img (PIL.Image) : image to resize
+        @param img_filename (str) : filename of image to resize
         @return PIL.Image : resized image
 
         """
+        img = IM.open(img_filename)
         if width is None:
             width = self.max_width
         img_width, img_height = img.size

@@ -7,7 +7,6 @@
 """
 from collections import namedtuple
 import math
-from PIL import Image as IM
 from reportlab.platypus import Image, Paragraph, Spacer, PageBreak
 import tempfile
 
@@ -46,7 +45,7 @@ class WebTestSection(ImageProcessingMixin):
         @filename (str) : full path to img.
 
         """
-        img = self.resize_img_to_width(IM.open(filename))
+        img = self.resize_img_to_width(filename)
         width, height = img.size
         pts_width = int(math.floor(self.std_to_points(self.px_to_std(width))))
         vertical_inches = self.px_to_std(height)
@@ -68,6 +67,7 @@ class WebTestSection(ImageProcessingMixin):
         """Add an image chunk to self's list of flowables."""
         chunk_filename = tempfile.mkstemp(suffix='.png')[1]
         chunk.save(chunk_filename, dpi=(200, 200), quality=95)
+        del chunk
         self._flowables.append(Div(pts_height,
                                    Image(chunk_filename,
                                          width=pts_width,
@@ -75,7 +75,7 @@ class WebTestSection(ImageProcessingMixin):
 
     def inches_to_fill(self):
         """@return (int) : std units left to fill on the current page."""
-        total_height = sum([x.height for x in self._flowables])
+        total_height = int(sum([x.height for x in self._flowables]))
         return self.points_to_std(self.max_y
                                   - (total_height % int(self.max_y)))
 

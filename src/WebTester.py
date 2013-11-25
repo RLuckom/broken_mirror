@@ -9,6 +9,7 @@ from collections import namedtuple
 import datetime
 from selenium import webdriver
 import tempfile
+import time
 
 from src.WebTestResults import WebTestResults
 
@@ -52,8 +53,10 @@ class WebTester(object):
             t = datetime.datetime.now()
             driver.get(resource)
             t = str(datetime.datetime.now() - t)
+            time.sleep(5)
             fn = tempfile.mkstemp(suffix='.png')[1]
             driver.get_screenshot_as_file(fn)
+            time.sleep(5)
             heading = '{} Test'.format(resource)
             ver = driver.capabilities['version']
             plat = driver.capabilities['platform']
